@@ -5,7 +5,7 @@ void CreateVertexBuffer(unsigned int * buffer, unsigned int size, float * data)
 {
     glGenBuffers(1, buffer);
     glBindBuffer(GL_ARRAY_BUFFER, *buffer);
-    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
 }
 
 void CreateIndexBuffer(unsigned int * ibo, unsigned int count, unsigned int * data)

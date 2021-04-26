@@ -46,8 +46,8 @@ int main(void)
     };
 
     unsigned int indices[] = {
-        0, 1, 2,
-        2, 3, 0
+        2, 1, 0,
+        0, 3, 2
     };
 
     unsigned int vao;
@@ -71,6 +71,11 @@ int main(void)
 
     int location = glGetUniformLocation(shader, "u_Color");
     float colorChange = 0;
+    float offset = 0.01f;
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -92,10 +97,13 @@ int main(void)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 
         if( colorChange > 1) {
+            colorChange = 1;
+            offset = -0.01f;
+        } else if(colorChange < 0){
             colorChange = 0;
-        } else {
-            colorChange += 0.01f;
+            offset = 0.01f;
         }
+        colorChange += offset;
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

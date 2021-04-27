@@ -5,9 +5,21 @@
 extern "C" {
 #endif
 
-  void CreateVertexBuffer(unsigned int * buffer, unsigned int size, float * data);
+  struct IndexBuffer {
+    unsigned int id;
+    unsigned int * indices;
+    unsigned int count;
+  };
 
-  void CreateIndexBuffer(unsigned int * buffer, unsigned int count, unsigned int * data);
+  struct VertexBuffer {
+    unsigned int id;
+    float * data;
+    unsigned int size;
+  };
+
+  struct VertexBuffer * CreateVertexBuffer(unsigned int size, float * data);
+
+  struct IndexBuffer * CreateIndexBuffer(unsigned int count, unsigned int * indices);
 
 #ifdef __cplusplus
 }

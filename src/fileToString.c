@@ -14,11 +14,16 @@ int FileLength(FILE * fpointer){
 
 char * FileToString(char * path) {
     FILE * fpointer = fopen(path, "r");
-    char * outString = malloc(FileLength(fpointer) * sizeof(char));
+    int fileLength = FileLength(fpointer);
+    char * outString = malloc(fileLength * sizeof(char) + 1);
+    strcpy(outString, "\0");
     char tempString[150];
 
-    while(fgets(tempString, 150, fpointer))
+    printf("%s\n", outString);
+
+    while(fgets(tempString, 150, fpointer)){
         strcat(outString, tempString);
+    }
 
     return outString;
 }

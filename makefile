@@ -1,6 +1,6 @@
 .PHONY = all clean
 cc = gcc
-libs = -lGL -lglfw -lGLEW
+libs = -lGL -lglfw -lGLEW -lm
 flags = -g
 # macros = -D_GLFW_X11 -D_GLFW_GLX -D_GLFW_USE_OPENGL
 
@@ -9,13 +9,14 @@ BINS = $(SRCS:src/%.c=%)
 LINK = $(BINS:%=build/%.o)
 
 all: ${BINS}
-	@echo linking...
+	@echo -n linking...
 	@$(cc) $(libs) $(flags) $(LINK) -o gratest
-	@echo done
+	@echo " done"
 
 %: src/%.c
-	@echo compiling $<
+	@echo -n compiling $<
 	@$(cc) -c $< -o build/$@.o
+	@echo " done"
 
 clean:
 	@echo cleaning...

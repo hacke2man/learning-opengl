@@ -3,8 +3,6 @@
 
 void Draw(struct IndexBuffer * indexBuffer, unsigned int vertexArray, unsigned int program)
 {
-    glClear(GL_COLOR_BUFFER_BIT);
-
     glUseProgram(program);
 
     glBindVertexArray(vertexArray);

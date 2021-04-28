@@ -134,8 +134,21 @@ int main(void)
     /*     1, 2, 3 */
     /* }; */
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    vec3 cubePoses[] = {
+        { 0.0f,  0.0f,  0.0f},
+        { 2.0f,  5.0f, -15.0f},
+        {-1.5f, -2.2f, -2.5f},
+        {-3.8f, -2.0f, -12.3f},
+        { 2.4f, -0.4f, -3.5f},
+        {-1.7f,  3.0f, -7.5f},
+        { 1.3f, -2.0f, -2.5f},
+        { 1.5f,  2.0f, -2.5f},
+        { 1.5f,  0.2f, -1.5f},
+        {-1.3f,  1.0f, -1.5f}
+    };
+
+    /* glEnable(GL_BLEND); */
+    /* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
 
     unsigned int vao;
     glGenVertexArrays(1, &vao);
@@ -157,12 +170,12 @@ int main(void)
     glUseProgram(shader);
 
     mat4 model; glm_mat4_identity(model);
-    vec4 axis = {1.0f, 1.0f, 0.0f}; 
-    vec4 axis1 = {1.0f, 1.0f, 0.0f}; 
+    vec4 axis = {1.0f, 1.0f, 0.0f};
+    vec4 axis1 = {1.0f, 1.0f, 0.0f};
     glm_rotate(model, glm_rad(-55.0f), axis);
 
     mat4 view; glm_mat4_identity(view);
-    vec4 translator = {0.0f,0.0f,-3.0f};
+    vec4 translator = {charPosx,charPosy,-3.0f};
     glm_translate(view, translator);
 
     mat4 projection;// glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.0f, projection);
@@ -172,25 +185,46 @@ int main(void)
     glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]);
     glUniform1i(glGetUniformLocation(shader, "u_texture"), 0);
+    glUniform1i(glGetUniformLocation(shader, "u_texture2"), 1);
 
-    struct Texture * texture = CreateTexture("/home/liam/dev/learning-opengl/img/link.png");
+    struct Texture * texture = CreateTexture("/home/liam/dev/learning-opengl/img/awesomeface.png");
+    struct Texture * tex2 = CreateTexture("/home/liam/dev/learning-opengl/img/container.jpg");
     glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex2->id);
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture->id);
 
+    float offset = 0.0f;
+    float itter = 0.1f;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glm_rotate(model, glm_rad(0.5f), axis);
-        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
-
         if(resized){
             glfwGetWindowSize(window, &width, &height);
             resized = 0;
         }
 
+        glm_mat4_identity(view);
+        vec4 translator = {charPosx, 0,-3.0f + charPosy};
+        glm_translate(view, translator);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
         glUseProgram(shader);
         glBindVertexArray(vao);
+        for(unsigned int i = 0; i < 10; i++)
+        {
+            mat4 model; glm_mat4_identity(model);
+            glm_translate(model, cubePoses[i]);
+            float angle = 20.0f * i;
+            vec3 idk = {1.0f,0.3f,0.5f};
+            glm_rotate(model, glm_rad(angle + offset), idk);
+            glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        offset += itter;
+
         glDrawArrays(GL_TRIANGLES, 0, 36);
         /* Draw(ibo, vao, shader); */
 
@@ -230,18 +264,19 @@ void DebugCallback(GLenum source,
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mods)
 {
+    float moveLength = 1.0f;
     switch (key) {
         case GLFW_KEY_H:
-            if(action == GLFW_PRESS) charPosx -= 100;
+            if(action == GLFW_PRESS) charPosx += moveLength;
             break;
         case GLFW_KEY_L:
-            if(action == GLFW_PRESS) charPosx += 100;
+            if(action == GLFW_PRESS) charPosx -= moveLength;
             break;
         case GLFW_KEY_J:
-            if(action == GLFW_PRESS) charPosy -= 100;
+            if(action == GLFW_PRESS) charPosy -= moveLength;
             break;
         case GLFW_KEY_K:
-            if(action == GLFW_PRESS) charPosy += 100;
+            if(action == GLFW_PRESS) charPosy += moveLength;
             break;
         default:
             break;

@@ -134,8 +134,15 @@ int main(void)
     /*     1, 2, 3 */
     /* }; */
 
+<<<<<<< HEAD
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+=======
+    unsigned int indices[] = {
+        2, 1, 0,
+        0, 3, 2
+    };
+>>>>>>> f1793e6864c06aa969201bf09d90f6c39ae6df16
 
     unsigned int vao;
     glGenVertexArrays(1, &vao);
@@ -156,6 +163,7 @@ int main(void)
 
     glUseProgram(shader);
 
+<<<<<<< HEAD
     mat4 model; glm_mat4_identity(model);
     vec4 axis = {1.0f, 1.0f, 0.0f}; 
     vec4 axis1 = {1.0f, 1.0f, 0.0f}; 
@@ -167,6 +175,15 @@ int main(void)
 
     mat4 projection;// glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.0f, projection);
     glm_perspective(glm_rad(45.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
+=======
+    int location = glGetUniformLocation(shader, "u_Color");
+    float colorChange = 0;
+    float offset = 0.01f;
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
+>>>>>>> f1793e6864c06aa969201bf09d90f6c39ae6df16
 
     glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
@@ -191,8 +208,23 @@ int main(void)
 
         glUseProgram(shader);
         glBindVertexArray(vao);
+<<<<<<< HEAD
         glDrawArrays(GL_TRIANGLES, 0, 36);
         /* Draw(ibo, vao, shader); */
+=======
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+
+        if( colorChange > 1) {
+            colorChange = 1;
+            offset = -0.01f;
+        } else if(colorChange < 0){
+            colorChange = 0;
+            offset = 0.01f;
+        }
+        colorChange += offset;
+>>>>>>> f1793e6864c06aa969201bf09d90f6c39ae6df16
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

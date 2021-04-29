@@ -23,11 +23,12 @@ void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsiz
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mods);
 void window_size_callback(GLFWwindow * window, int width, int height);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
-int resized = 0;
-float charPosx = 0;
-float charPosy = 0;
+vec3 charpos;
 int forward = 0;
-float mousex;
+int backword = 0;
+int leftword = 0;
+int rightword = 0;
+float mousex = 4.785f;
 float mousey;
 
 
@@ -79,7 +80,6 @@ int main(void)
     /* glFrontFace(GL_CCW); */
 
     glfwGetWindowSize(window, &width, &height);
-    printf("%d %d\n",width, height);
     glViewport(0, 0, width, height);
 
 
@@ -181,11 +181,11 @@ int main(void)
     glm_rotate(model, glm_rad(-55.0f), axis);
 
     mat4 view; glm_mat4_identity(view);
-    vec4 translator = {charPosx,charPosy,-3.0f};
+    vec4 translator = {charpos[0],charpos[1],-3.0f};
     glm_translate(view, translator);
 
     mat4 projection; //glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, 0.1f, 100.0f, projection);
-    glm_perspective(glm_rad(45.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
+    glm_perspective(glm_rad(90.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
 
     glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
@@ -206,36 +206,37 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if(resized){
-            glfwGetWindowSize(window, &width, &height);
-            resized = 0;
-        }
 
-
-        float camX = charPosx;
-        float camZ = charPosy;
         float camdirz = sin(mousex) * cos(mousey);
         float camdirx = cos(mousex) * cos(mousey);
-
         float camdiry =0 - sin(mousey);
-        printf("%f \n", mousey);
 
-        vec3 eye = {camX, 0.0f, camZ + 3.0f};
+        vec3 eye = {charpos[0], charpos[1], charpos[2] + 3.0f};
         vec3 direction = {camdirx, camdiry, camdirz};
-        glm_vec3_add(eye, direction, direction);
         vec3 up = {0.0, 1.0, 0.0};
 
+        vec3 movedir;
+        glm_vec3_divs(direction, 40, movedir);
         if(forward)
         {
-            charPosx += camdirx/100;
-            charPosy += camdirz/100;
+            glm_vec3_add(charpos, movedir, charpos);
+        } else if(backword) {
+            glm_vec3_sub(charpos, movedir, charpos);
+        }else if (leftword) {
+            glm_vec3_rotate(movedir, glm_rad(90.0f), up);
+            glm_vec3_divs(movedir, cos(mousey), movedir);
+            movedir[1] = 0;
+            glm_vec3_add(charpos, movedir, charpos);
+        }else if(rightword) {
+            glm_vec3_rotate(movedir, glm_rad(90.0f), up);
+            glm_vec3_divs(movedir, cos(mousey), movedir);
+            movedir[1] = 0;
+            glm_vec3_sub(charpos, movedir, charpos);
         }
 
+        glm_vec3_add(eye, direction, direction);
         glm_lookat(eye, direction, up, view);
 
-        /* glm_mat4_identity(view); */
-        /* vec4 translator = {charPosx, 0,-3.0f + charPosy}; */
-        /* glm_translate(view, translator); */
         glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
         glUseProgram(shader);
         glBindVertexArray(vao);
@@ -245,16 +246,12 @@ int main(void)
             glm_translate(model, cubePoses[i]);
             float angle = 20.0f * i;
             vec3 idk = {1.0f,0.3f,0.5f};
-            glm_rotate(model, glm_rad(angle /*+ offset*/), idk);
+            glm_rotate(model, glm_rad(angle + offset), idk);
             glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-
         offset += itter;
-
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        /* Draw(ibo, vao, shader); */
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -269,7 +266,6 @@ int main(void)
 }
 void window_size_callback(GLFWwindow * window, int width, int height){
     glViewport(0, 0, width, height);
-    resized = 1;
 }
 
 void DebugCallback(GLenum source,
@@ -295,20 +291,32 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
     float moveLength = 1.0f;
     switch (key) {
         case GLFW_KEY_H:
-            if(action == GLFW_PRESS) charPosx -= moveLength;
+            if(action == GLFW_PRESS) charpos[0] -= moveLength;
             break;
         case GLFW_KEY_L:
-            if(action == GLFW_PRESS) charPosx += moveLength;
+            if(action == GLFW_PRESS) charpos[0] += moveLength;
             break;
         case GLFW_KEY_J:
-            if(action == GLFW_PRESS) charPosy += moveLength;
+            if(action == GLFW_PRESS) charpos[2] += moveLength;
             break;
         case GLFW_KEY_K:
-            if(action == GLFW_PRESS) charPosy -= moveLength;
+            if(action == GLFW_PRESS) charpos[2] -= moveLength;
             break;
         case GLFW_KEY_W:
-            if(action == GLFW_PRESS) forward = true;
+            if(action == GLFW_PRESS || action == GLFW_REPEAT) forward = true;
             else forward = false;
+            break;
+        case GLFW_KEY_S:
+            if(action == GLFW_PRESS || action == GLFW_REPEAT) backword = true;
+            else backword = false;
+            break;
+        case GLFW_KEY_A:
+            if(action == GLFW_PRESS || action == GLFW_REPEAT) leftword = true;
+            else leftword = false;
+            break;
+        case GLFW_KEY_D:
+            if(action == GLFW_PRESS || action == GLFW_REPEAT) rightword = true;
+            else rightword = false;
             break;
         default:
             break;
@@ -323,5 +331,11 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
     mousex+=xpos/(float)width-0.5f;
 
-    mousey+= (ypos/height -0.5f)/3;
+    if((mousey +(ypos/height -0.5f)/3) < -3.14/2){
+        mousey = -3.14/2;
+    } else if((mousey +(ypos/height -0.5f)/3) > 3.14/2){
+        mousey = 3.14/2;
+    } else {
+        mousey+= (ypos/height -0.5f)/3;
+    }
 }

@@ -22,10 +22,14 @@
 void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mods);
 void window_size_callback(GLFWwindow * window, int width, int height);
-int test = 0;
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 int resized = 0;
-int charPosx = 0;
-int charPosy = 0;
+float charPosx = 0;
+float charPosy = 0;
+int forward = 0;
+float mousex;
+float mousey;
+
 
 int main(void)
 {
@@ -62,9 +66,11 @@ int main(void)
     }
 
     /* Make the window's context current */
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, &key_callback);
     glfwSetWindowSizeCallback(window, &window_size_callback);
+    glfwSetCursorPosCallback(window, &cursor_position_callback);
     glewInit();
     glDebugMessageCallback(&DebugCallback, NULL);
     glEnable(GL_DEPTH_TEST);
@@ -178,7 +184,7 @@ int main(void)
     vec4 translator = {charPosx,charPosy,-3.0f};
     glm_translate(view, translator);
 
-    mat4 projection;// glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.0f, projection);
+    mat4 projection; //glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, 0.1f, 100.0f, projection);
     glm_perspective(glm_rad(45.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
 
     glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
@@ -205,9 +211,31 @@ int main(void)
             resized = 0;
         }
 
-        glm_mat4_identity(view);
-        vec4 translator = {charPosx, 0,-3.0f + charPosy};
-        glm_translate(view, translator);
+
+        float camX = charPosx;
+        float camZ = charPosy;
+        float camdirz = sin(mousex) * cos(mousey);
+        float camdirx = cos(mousex) * cos(mousey);
+
+        float camdiry =0 - sin(mousey);
+        printf("%f \n", mousey);
+
+        vec3 eye = {camX, 0.0f, camZ + 3.0f};
+        vec3 direction = {camdirx, camdiry, camdirz};
+        glm_vec3_add(eye, direction, direction);
+        vec3 up = {0.0, 1.0, 0.0};
+
+        if(forward)
+        {
+            charPosx += camdirx/100;
+            charPosy += camdirz/100;
+        }
+
+        glm_lookat(eye, direction, up, view);
+
+        /* glm_mat4_identity(view); */
+        /* vec4 translator = {charPosx, 0,-3.0f + charPosy}; */
+        /* glm_translate(view, translator); */
         glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
         glUseProgram(shader);
         glBindVertexArray(vao);
@@ -217,7 +245,7 @@ int main(void)
             glm_translate(model, cubePoses[i]);
             float angle = 20.0f * i;
             vec3 idk = {1.0f,0.3f,0.5f};
-            glm_rotate(model, glm_rad(angle + offset), idk);
+            glm_rotate(model, glm_rad(angle /*+ offset*/), idk);
             glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -267,20 +295,33 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
     float moveLength = 1.0f;
     switch (key) {
         case GLFW_KEY_H:
-            if(action == GLFW_PRESS) charPosx += moveLength;
-            break;
-        case GLFW_KEY_L:
             if(action == GLFW_PRESS) charPosx -= moveLength;
             break;
+        case GLFW_KEY_L:
+            if(action == GLFW_PRESS) charPosx += moveLength;
+            break;
         case GLFW_KEY_J:
-            if(action == GLFW_PRESS) charPosy -= moveLength;
+            if(action == GLFW_PRESS) charPosy += moveLength;
             break;
         case GLFW_KEY_K:
-            if(action == GLFW_PRESS) charPosy += moveLength;
+            if(action == GLFW_PRESS) charPosy -= moveLength;
+            break;
+        case GLFW_KEY_W:
+            if(action == GLFW_PRESS) forward = true;
+            else forward = false;
             break;
         default:
             break;
     }
-    if(key == GLFW_KEY_J && action == GLFW_PRESS)
-        test = !test;
+}
+
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    glfwSetCursorPos(window, (float)width/2, (float)height/2);
+
+    mousex+=xpos/(float)width-0.5f;
+
+    mousey+= (ypos/height -0.5f)/3;
 }

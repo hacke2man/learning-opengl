@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <alloca.h>
 #include <limits.h>
+#include <math.h>
 
 #include "deps/cglm/include/cglm/affine.h"
 #include "deps/cglm/include/cglm/cglm.h"
@@ -28,7 +29,7 @@ int forward = 0;
 int backword = 0;
 int leftword = 0;
 int rightword = 0;
-float mousex = 4.785f;
+float mousex = -M_PI/2;
 float mousey;
 
 
@@ -85,72 +86,78 @@ int main(void)
 
     printf("%s\n", glGetString(GL_VERSION));
 
-    /* float positions[] = { */
-    /*     //pos              //tex coords */
-    /*     0.5f,  0.5f, 0.0f, 1.0f, 1.0f, */
-    /*     0.5f, -0.5f, 0.0f, 1.0f, 0.0f, */
-    /*    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, */
-    /*    -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, */
+    /* float vertices[] = { */
+    /*     -0.5f, -0.5f,  0.5f, 0.0f, 0.0f,//front: bottom left */
+    /*      0.5f, -0.5f,  0.5f, 1.0f, 0.0f,//bottom right */
+    /*      0.5f,  0.5f,  0.5f, 1.0f, 1.0f,//top right */
+    /*     -0.5f,  0.5f,  0.5f, 0.0f, 1.0f,//top left */
+    /*     -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,//back: bottom left */
+    /*      0.5f, -0.5f, -0.5f, 1.0f, 0.0f,//bottom right */
+    /*      0.5f,  0.5f, -0.5f, 1.0f, 1.0f,//top right */
+    /*     -0.5f,  0.5f, -0.5f, 0.0f, 1.0f,//top left */
+    /* }; */
+
+    /* unsigned int indices[] = { */
+    /*     0, 3, 2,//front */
+    /*     2, 1, 0, */
+
+    /*     4, 7, 6,//back */
+    /*     6, 5, 4, */
+
+    /*     2, 6, 7,//top */
+    /*     7, 3, 2, */
+
+    /*     4, 0, 1,//bottom */
+    /*     1, 5, 4, */
+
+    /*     1, 2, 6, */
+    /*     6, 5, 1, */
+
+    /*     4, 7, 3, */
+    /*     3, 0, 4 */
     /* }; */
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    /* unsigned int indices[] = { */
-    /*     0, 1, 3, */
-    /*     1, 2, 3 */
-    /* }; */
-
-    vec3 cubePoses[] = {
-        { 0.0f,  0.0f,  0.0f},
-        { 2.0f,  5.0f, -15.0f},
-        {-1.5f, -2.2f, -2.5f},
-        {-3.8f, -2.0f, -12.3f},
-        { 2.4f, -0.4f, -3.5f},
-        {-1.7f,  3.0f, -7.5f},
-        { 1.3f, -2.0f, -2.5f},
-        { 1.5f,  2.0f, -2.5f},
-        { 1.5f,  0.2f, -1.5f},
-        {-1.3f,  1.0f, -1.5f}
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
 
     /* glEnable(GL_BLEND); */
@@ -163,35 +170,25 @@ int main(void)
     struct VertexBuffer * vb = CreateVertexBuffer(sizeof(vertices), vertices);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (const void *) (3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (const void *) (3 * sizeof(float)));
 
-    /* struct IndexBuffer * ibo = CreateIndexBuffer(6, indices); */
+    /* struct IndexBuffer * ibo = CreateIndexBuffer(36, indices); */
 
     char * vertexShader = FileToString("/home/liam/dev/learning-opengl/res/vertex.shader");
     char * fragmentShader = FileToString("/home/liam/dev/learning-opengl/res/fragment.shader");
+    char * lightshader = FileToString("/home/liam/dev/learning-opengl/res/lightshader.shader");
     unsigned int shader = CreateShader( vertexShader, fragmentShader);
-
-    glUseProgram(shader);
-
-    mat4 model; glm_mat4_identity(model);
-    vec4 axis = {1.0f, 1.0f, 0.0f};
-    vec4 axis1 = {1.0f, 1.0f, 0.0f};
-    glm_rotate(model, glm_rad(-55.0f), axis);
-
-    mat4 view; glm_mat4_identity(view);
-    vec4 translator = {charpos[0],charpos[1],-3.0f};
-    glm_translate(view, translator);
+    unsigned int lightsh = CreateShader( vertexShader, lightshader);
 
     mat4 projection; //glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, 0.1f, 100.0f, projection);
     glm_perspective(glm_rad(90.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
 
-    glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]);
-    glUniform1i(glGetUniformLocation(shader, "u_texture"), 0);
-    glUniform1i(glGetUniformLocation(shader, "u_texture2"), 1);
+    /* glUseProgram(shader); */
+    /* glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]); */
+    /* glUniform1i(glGetUniformLocation(shader, "u_texture"), 0); */
+    /* glUniform1i(glGetUniformLocation(shader, "u_texture2"), 1); */
 
     struct Texture * texture = CreateTexture("/home/liam/dev/learning-opengl/img/awesomeface.png");
     struct Texture * tex2 = CreateTexture("/home/liam/dev/learning-opengl/img/container.jpg");
@@ -200,8 +197,6 @@ int main(void)
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture->id);
 
-    float offset = 0.0f;
-    float itter = 0.1f;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
@@ -235,23 +230,40 @@ int main(void)
         }
 
         glm_vec3_add(eye, direction, direction);
+
+        mat4 model; glm_mat4_identity(model);
+        mat4 view; glm_mat4_identity(view);
         glm_lookat(eye, direction, up, view);
 
-        glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
+        vec3 lightColor = {1.0f,1.0f,1.0f};
+        vec3 objectColor = {1.0f, 0.5f, 0.31f};
+        vec4 transiflup = { 1.0f, 1.0f, 1.0f};
         glUseProgram(shader);
         glBindVertexArray(vao);
-        for(unsigned int i = 0; i < 10; i++)
-        {
-            mat4 model; glm_mat4_identity(model);
-            glm_translate(model, cubePoses[i]);
-            float angle = 20.0f * i;
-            vec3 idk = {1.0f,0.3f,0.5f};
-            glm_rotate(model, glm_rad(angle + offset), idk);
-            glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniform3fv(glGetUniformLocation(shader, "lightColor"), 1, &lightColor[0]);
+        glUniform3fv(glGetUniformLocation(shader, "objectColor"), 1, &objectColor[0]);
+        glUniform3fv(glGetUniformLocation(shader, "lightpos"), 1, &transiflup[0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]);
 
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-        offset += itter;
+        vec4 translator = {0.0f,0.0f,0.0f};
+        glm_translate_make(model, translator);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
+        /* glDrawElements(GL_TRIANGLES, ibo->count, GL_UNSIGNED_INT, NULL); */
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glUseProgram(lightsh);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]);
+
+        glm_translate_make(model, transiflup);
+        vec3 a = {0.3f, 0.3f, 0.3f};
+        glm_scale(model, a);
+        glUniformMatrix4fv(glGetUniformLocation(lightsh, "model"), 1, GL_FALSE, &model[0][0]);
+        /* glDrawElements(GL_TRIANGLES, ibo->count, GL_UNSIGNED_INT, NULL); */
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -261,6 +273,7 @@ int main(void)
     }
 
     glDeleteProgram(shader);
+    glDeleteProgram(lightsh);
     glfwTerminate();
     return 0;
 }

@@ -175,18 +175,15 @@ int main(void)
     /* glEnable(GL_BLEND); */
     /* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
 
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    /* unsigned int vao; */
+    /* glGenVertexArrays(1, &vao); */
+    /* glBindVertexArray(vao); */
 
     struct VertexBuffer * vb = CreateVertexBuffer(sizeof(vertices), vertices);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void *) (3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void *) (6 * sizeof(float)));
+    struct VertexArray * vao = CreateVertexArray(3);
+    AddAttribPointer(vao, 3);
+    AddAttribPointer(vao, 2);
 
     /* struct IndexBuffer * ibo = CreateIndexBuffer(36, indices); */
 
@@ -272,7 +269,7 @@ int main(void)
         /* glm_vec3_scale(transiflup, 5, transiflup); */
 
         glUseProgram(shader);
-        glBindVertexArray(vao);
+        glBindVertexArray(vao->id);
         glUniform3fv(glGetUniformLocation(shader, "lightColor"), 1, &lightColor[0]);
         glUniform3fv(glGetUniformLocation(shader, "viewPos"), 1, &eye[0]);
         glUniform3fv(glGetUniformLocation(shader, "objectColor"), 1, &objectColor[0]);

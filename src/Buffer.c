@@ -3,6 +3,51 @@
 #include <stdio.h>
 #include "Buffer.h"
 
+struct VertexArray * CreateVertexArray(unsigned int count) {
+    struct VertexArray * vertexArray = malloc(sizeof(struct VertexArray));
+    vertexArray->attribPointer = malloc(sizeof(struct AttribPointer));
+    vertexArray->attribPointer->count = count;
+    vertexArray->attribPointer->nextPointer = NULL;
+    vertexArray->pointerCount = 1;
+    glGenVertexArrays(1, &vertexArray->id);
+    glBindVertexArray(vertexArray->id);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, count, GL_FLOAT, GL_FALSE, count * sizeof(float), 0);
+    return vertexArray;
+}
+
+void AddAttribPointer(struct VertexArray * vertexArray, unsigned int count) {
+    struct AttribPointer * ap = vertexArray->attribPointer;
+    int stride = 0;
+    for(int i = 0; i < vertexArray->pointerCount; i++)
+    {
+        stride += ap->count * sizeof(float);
+        if(ap->nextPointer != NULL)
+            ap = ap->nextPointer;
+    }
+    stride += count * sizeof(float);
+
+
+    ap = vertexArray->attribPointer;
+    int offset = 0;
+    int i;
+    for(i = 0; i < vertexArray->pointerCount; i++)
+    {
+        glEnableVertexAttribArray(i);
+        glVertexAttribPointer(i, ap->count, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+        offset += ap->count * sizeof(float);
+        if(ap->nextPointer != NULL)
+            ap = ap->nextPointer;
+    }
+    glEnableVertexAttribArray(i);
+    glVertexAttribPointer(i, count, GL_FLOAT, GL_FALSE, stride, (const void *)offset);
+
+    struct AttribPointer * newPointer = malloc(sizeof(struct AttribPointer));
+    newPointer->count = count;
+    ap->nextPointer = newPointer;
+    vertexArray->pointerCount++;
+}
+
 struct VertexBuffer * CreateVertexBuffer(unsigned int size, float data[])
 {
     struct VertexBuffer * vertexBuffer = malloc(sizeof(struct VertexBuffer));

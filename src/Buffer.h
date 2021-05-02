@@ -17,6 +17,20 @@ extern "C" {
     unsigned int size;
   };
 
+  struct VertexArray {
+    unsigned int id;
+    unsigned int pointerCount;
+    struct AttribPointer * attribPointer;
+  };
+
+  struct AttribPointer {
+    unsigned int count;
+    struct AttribPointer * nextPointer;
+  };
+
+  struct VertexArray * CreateVertexArray(unsigned int count);
+  void AddAttribPointer(struct VertexArray * vertexArray, unsigned int count);
+
   struct VertexBuffer * CreateVertexBuffer(unsigned int size, float * data);
 
   struct IndexBuffer * CreateIndexBuffer(unsigned int count, unsigned int * indices);

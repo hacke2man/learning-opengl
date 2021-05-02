@@ -257,7 +257,7 @@ int main(void)
         glm_vec3_add(eye, direction, direction);
 
         mat4 model; glm_mat4_identity(model);
-        offset += 0.1f;
+        offset += 0.0f; // 0.1f;
         vec3 axis = {1.0f, 0.3f, 0.5f};
         glm_rotate(model, glm_rad(offset), axis);
         mat4 view; glm_mat4_identity(view);

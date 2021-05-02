@@ -1,4 +1,4 @@
 # not compiling statically at the moment
 /deps
 /build
-gratest
+a.out

@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
   char * FileToString(char * path);
+  char * AppendExecLocation(char * pathExtension);
 
 #ifdef __cplusplus
 }

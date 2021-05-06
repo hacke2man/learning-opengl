@@ -20,4 +20,4 @@ all: ${BINS}
 
 clean:
 	@echo cleaning...
-	@rm build/* gratest
+	@rm build/* a.out

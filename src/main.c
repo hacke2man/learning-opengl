@@ -9,11 +9,11 @@
 #include "deps/cglm/include/cglm/affine.h"
 #include "deps/cglm/include/cglm/cglm.h"
 #include "deps/cglm/include/cglm/cam.h"
-
 #include "deps/cglm/include/cglm/mat4.h"
 #include "deps/cglm/include/cglm/project.h"
 #include "deps/cglm/include/cglm/util.h"
 #include "deps/cglm/include/cglm/vec3.h"
+
 #include "fileToString.h"
 #include "Buffer.h"
 #include "shader.h"
@@ -23,8 +23,10 @@
 void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mods);
 void window_size_callback(GLFWwindow * window, int width, int height);
+void calcView(mat4 * view, vec3 * direction);
+void move();
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
-vec3 charpos;
+float charpos[3] = {0, 0, 3.0};
 int forward = 0;
 int backword = 0;
 int leftword = 0;
@@ -48,19 +50,11 @@ int main(void)
 
     int width, height, xpos, ypos;
     GLFWmonitor * primary = glfwGetPrimaryMonitor();
-    /* glfwGetMonitorWorkarea(primary, &xpos, &ypos, &width, &height); */
-    /* const GLFWvidmode * mode = glfwGetVideoMode(primary); */
-    /* glfwWindowHint(GLFW_RED_BITS, mode->redBits); */
-    /* glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits); */
-    /* glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits); */
-    /* glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate); */
-    /* glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); */
     glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    /* window = glfwCreateWindow(width, height, "Hello World", NULL, NULL); */
-    /* window = glfwCreateWindow(width, height, "Hello World", primary , NULL); */
+
     if (!window)
     {
         glfwTerminate();
@@ -76,46 +70,12 @@ int main(void)
     glewInit();
     glDebugMessageCallback(&DebugCallback, NULL);
     glEnable(GL_DEPTH_TEST);
-    /* glEnable(GL_CULL_FACE); */
-    /* glCullFace(GL_BACK); */
-    /* glFrontFace(GL_CCW); */
 
     glfwGetWindowSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
-
     printf("%s\n", glGetString(GL_VERSION));
 
-    /* float vertices[] = { */
-    /*     -0.5f, -0.5f,  0.5f, 0.0f, 0.0f,//front: bottom left */
-    /*      0.5f, -0.5f,  0.5f, 1.0f, 0.0f,//bottom right */
-    /*      0.5f,  0.5f,  0.5f, 1.0f, 1.0f,//top right */
-    /*     -0.5f,  0.5f,  0.5f, 0.0f, 1.0f,//top left */
-    /*     -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,//back: bottom left */
-    /*      0.5f, -0.5f, -0.5f, 1.0f, 0.0f,//bottom right */
-    /*      0.5f,  0.5f, -0.5f, 1.0f, 1.0f,//top right */
-    /*     -0.5f,  0.5f, -0.5f, 0.0f, 1.0f,//top left */
-    /* }; */
-
-    /* unsigned int indices[] = { */
-    /*     0, 3, 2,//front */
-    /*     2, 1, 0, */
-
-    /*     4, 7, 6,//back */
-    /*     6, 5, 4, */
-
-    /*     2, 6, 7,//top */
-    /*     7, 3, 2, */
-
-    /*     4, 0, 1,//bottom */
-    /*     1, 5, 4, */
-
-    /*     1, 2, 6, */
-    /*     6, 5, 1, */
-
-    /*     4, 7, 3, */
-    /*     3, 0, 4 */
-    /* }; */
     float vertices[] = {
     // positions          // normals           // texture coords
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
@@ -172,137 +132,74 @@ int main(void)
         { 1.5f,  0.2f, -1.5f}, 
         {-1.3f,  1.0f, -1.5f}  
     };
-    /* glEnable(GL_BLEND); */
-    /* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
 
-    /* unsigned int vao; */
-    /* glGenVertexArrays(1, &vao); */
-    /* glBindVertexArray(vao); */
-
-    struct VertexBuffer * vb = CreateVertexBuffer(sizeof(vertices), vertices);
-
-    struct VertexArray * vao = CreateVertexArray(3);
+    struct VertexBuffer * vb = CreateVertexBuffer(vertices, sizeof(vertices), 8 * sizeof(float));
+    struct VertexArray * vao = CreateVertexArray(vb);
+    AddAttribPointer(vao, 3);
     AddAttribPointer(vao, 3);
     AddAttribPointer(vao, 2);
 
-    /* struct IndexBuffer * ibo = CreateIndexBuffer(36, indices); */
+    struct VertexArray * sourceVao = CreateVertexArray(vb);
+    AddAttribPointer(sourceVao, 3);
 
-    unsigned int sourceVao;
-    glGenVertexArrays(1, &sourceVao);
-    glBindVertexArray(sourceVao);
+    char * vertexShader = FileToString("res/vert.vs");
+    char * fragmentShader = FileToString("res/object.fs");
+    char * lightshader = FileToString("res/light.fs");
+    struct Material * box = CreateMaterial(vertexShader, fragmentShader);
+    struct Material * light = CreateMaterial(vertexShader, lightshader);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vb->id);
+    struct Texture * container_spec = CreateTexture("img/container2_specular.png");
+    struct Texture * container = CreateTexture("img/container2.png");
+    BindTexture(container_spec, GL_TEXTURE1);
+    BindTexture(container, GL_TEXTURE0);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
-
-
-    char * vertexShader = FileToString("/home/liam/dev/learning-opengl/res/vertex.shader");
-    char * fragmentShader = FileToString("/home/liam/dev/learning-opengl/res/fragment.shader");
-    char * lightshader = FileToString("/home/liam/dev/learning-opengl/res/lightshader.shader");
-    unsigned int shader = CreateShader( vertexShader, fragmentShader);
-    unsigned int lightsh = CreateShader( vertexShader, lightshader);
-
-    mat4 projection; //glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, 0.1f, 100.0f, projection);
+    vec3 direction;
+    mat4 projection;
     glm_perspective(glm_rad(90.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
 
-    glUseProgram(shader);
-    glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]);
-    /* glUniform1i(glGetUniformLocation(shader, "u_texture"), 0); */
-    glUniform1i(glGetUniformLocation(shader, "u_texture2"), 1);
+    /* vec3 objectColor = {1.0f, 0.5f, 0.31f}; */
+    vec3 objectColor = {0.3f,0.8f,0.8f};
+    vec3 lightColor = {1.0f,1.0f,1.0f};
+    /* vec3 lightColor = {245.0f/255.0f,212.0f/255.0f,0.0f}; */
+    /* vec3 lightColor = {0.3f,0.8f,0.8f}; */
+    vec3 lightPos = { 1.2f, 1.0f, 2.0f};
 
-    struct Texture * texture = CreateTexture("/home/liam/dev/learning-opengl/img/container2_specular.png");
-    struct Texture * tex2 = CreateTexture("/home/liam/dev/learning-opengl/img/container2.png");
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex2->id);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture->id);
 
-    float offset = 0;
+
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float camdirz = sin(mousex) * cos(mousey);
-        float camdirx = cos(mousex) * cos(mousey);
-        float camdiry =0 - sin(mousey);
-
-        vec3 eye = {charpos[0], charpos[1], charpos[2] + 3.0f};
-        vec3 direction = {camdirx, camdiry, camdirz};
-        vec3 up = {0.0, 1.0, 0.0};
-
-        vec3 movedir;
-        glm_vec3_divs(direction, 40, movedir);
-        if(forward)
-        {
-            glm_vec3_add(charpos, movedir, charpos);
-        } else if(backword) {
-            glm_vec3_sub(charpos, movedir, charpos);
-        }else if (leftword) {
-            glm_vec3_rotate(movedir, glm_rad(90.0f), up);
-            glm_vec3_divs(movedir, cos(mousey), movedir);
-            movedir[1] = 0;
-            glm_vec3_add(charpos, movedir, charpos);
-        }else if(rightword) {
-            glm_vec3_rotate(movedir, glm_rad(90.0f), up);
-            glm_vec3_divs(movedir, cos(mousey), movedir);
-            movedir[1] = 0;
-            glm_vec3_sub(charpos, movedir, charpos);
-        }
-
-        glm_vec3_add(eye, direction, direction);
-
         mat4 model; glm_mat4_identity(model);
-        offset += 0.0f; // 0.1f;
-        vec3 axis = {1.0f, 0.3f, 0.5f};
-        glm_rotate(model, glm_rad(offset), axis);
         mat4 view; glm_mat4_identity(view);
-        glm_lookat(eye, direction, up, view);
 
-        vec3 lightColor = {1.0f,1.0f,1.0f};
-        /* vec3 lightColor = {245.0f/255.0f,212.0f/255.0f,0.0f}; */
-        /* vec3 lightColor = {0.3f,0.8f,0.8f}; */
-        vec3 objectColor = {1.0f, 0.5f, 0.31f};
-        vec4 transiflup = { 1.2f, 1.0f, 2.0f};
-        glm_vec3_rotate(transiflup, glm_rad(-offset * 10), up);
-        /* glm_vec3_scale(transiflup, 5, transiflup); */
+        calcView(&view, &direction);
+        move(direction);
 
-        glUseProgram(shader);
         glBindVertexArray(vao->id);
-        glUniform3fv(glGetUniformLocation(shader, "lightColor"), 1, &lightColor[0]);
-        glUniform3fv(glGetUniformLocation(shader, "viewPos"), 1, &eye[0]);
-        glUniform3fv(glGetUniformLocation(shader, "objectColor"), 1, &objectColor[0]);
-        glUniform3fv(glGetUniformLocation(shader, "lightPos"), 1, &transiflup[0]);
-        glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, &view[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, &projection[0][0]);
-
-        /* for(unsigned int i = 0; i < 10; i++) */
-        /* { */
-        /*     glm_mat4_identity(model); */
-        /*     glm_translate(model, cubePositions[i]); */
-        /*     float angle = 20.0f * i; */ 
-        /*     glm_rotate(model, glm_rad(angle + offset), axis); */
-
-        /*     glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, &model[0][0]); */
-        /*     glDrawArrays(GL_TRIANGLES, 0, 36); */
-        /* } */
-        /* glDrawElements(GL_TRIANGLES, ibo->count, GL_UNSIGNED_INT, NULL); *1/ */
+        BindMaterial(box);
+        glUniform3fv(glGetUniformLocation(box->id, "lightPos"), 1, lightPos);
+        glUniform3fv(glGetUniformLocation(box->id, "lightColor"), 1, lightColor);
+        glUniform3fv(glGetUniformLocation(box->id, "objectColor"), 1, objectColor);
+        glUniform3fv(glGetUniformLocation(box->id, "viewPos"), 1, charpos);
+        glUniformMatrix4fv(glGetUniformLocation(box->id, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(box->id, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(box->id, "projection"), 1, GL_FALSE, &projection[0][0]);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        glUseProgram(lightsh);
-        glUniform3fv(glGetUniformLocation(lightsh, "lightColor"), 1, &lightColor[0]);
-        glUniformMatrix4fv(glGetUniformLocation(lightsh, "model"), 1, GL_FALSE, &model[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(lightsh, "view"), 1, GL_FALSE, &view[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(lightsh, "projection"), 1, GL_FALSE, &projection[0][0]);
 
-        glm_translate_make(model, transiflup);
-        vec3 a = {0.3f, 0.3f, 0.3f};
-        glm_scale(model, a);
-        glUniformMatrix4fv(glGetUniformLocation(lightsh, "model"), 1, GL_FALSE, &model[0][0]);
-        /* glDrawElements(GL_TRIANGLES, ibo->count, GL_UNSIGNED_INT, NULL); */
-        glBindVertexArray(sourceVao);
+        glm_translate_make(model, lightPos);
+        vec3 resizer = {0.3f, 0.3f, 0.3f};
+        glm_scale(model, resizer);
+
+        glBindVertexArray(sourceVao->id);
+        BindMaterial(light);
+        glUniform3fv(glGetUniformLocation(light->id, "lightColor"), 1, &lightColor[0]);
+        glUniformMatrix4fv(glGetUniformLocation(light->id, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(light->id, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(light->id, "projection"), 1, GL_FALSE, &projection[0][0]);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         /* Swap front and back buffers */
@@ -312,11 +209,65 @@ int main(void)
         glfwPollEvents();
     }
 
-    glDeleteProgram(shader);
-    glDeleteProgram(lightsh);
+    glDeleteProgram(box->id);
+    glDeleteProgram(light->id);
     glfwTerminate();
     return 0;
 }
+
+void calcView(mat4 * view, vec3 * direction)
+{
+    vec3 up = {0.0, 1.0, 0.0};
+    vec3 center = {0.0f,0.0f,0.0f};
+
+    vec3 newDir = {
+        cos(mousex) * cos(mousey),
+        -sin(mousey),
+        sin(mousex) * cos(mousey)
+    };
+
+    glm_vec3_copy(newDir, *direction);
+
+    glm_vec3_add(charpos, newDir, center);
+    glm_lookat(charpos, center, up, *view);
+}
+
+void move(float direction[3])
+{
+    float movedir[3] = {0.0f,0.0f,0.0f};
+    float up[3] = {0.0f,1.0f,0.0f};
+    if(forward && backword){}
+    else if(forward)
+    {
+        glm_vec3_add(direction, movedir, movedir);
+    }else if(backword) {
+        glm_vec3_add(direction, movedir, movedir);
+        glm_vec3_scale(movedir, -1, movedir);
+    }
+
+    float strafeDir[3];
+    glm_vec3_copy(direction, strafeDir);
+    if(leftword && rightword){}
+    else if (leftword) 
+    {
+        glm_vec3_rotate(strafeDir, glm_rad(90.0f), up);
+        glm_vec3_divs(strafeDir, cos(mousey), strafeDir);
+        strafeDir[1] = 0;
+    }
+    else if(rightword) 
+    {
+        glm_vec3_rotate(strafeDir, glm_rad(270.0f), up);
+        glm_vec3_divs(strafeDir, cos(mousey), strafeDir);
+        strafeDir[1] = 0;
+    }
+
+    if(leftword || rightword) glm_vec3_add(movedir, strafeDir, movedir);
+
+    glm_vec3_normalize(movedir);
+    glm_vec3_divs(movedir, 40, movedir);
+    glm_vec3_add(movedir, charpos, charpos);
+}
+
 void window_size_callback(GLFWwindow * window, int width, int height){
     glViewport(0, 0, width, height);
 }
@@ -341,35 +292,22 @@ void DebugCallback(GLenum source,
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mods)
 {
-    float moveLength = 1.0f;
     switch (key) {
-        case GLFW_KEY_H:
-            if(action == GLFW_PRESS) charpos[0] -= moveLength;
-            break;
-        case GLFW_KEY_L:
-            if(action == GLFW_PRESS) charpos[0] += moveLength;
-            break;
-        case GLFW_KEY_J:
-            if(action == GLFW_PRESS) charpos[2] += moveLength;
-            break;
-        case GLFW_KEY_K:
-            if(action == GLFW_PRESS) charpos[2] -= moveLength;
-            break;
         case GLFW_KEY_W:
-            if(action == GLFW_PRESS || action == GLFW_REPEAT) forward = true;
-            else forward = false;
+            if(action == GLFW_PRESS) forward = true;
+            else if(action == GLFW_RELEASE) forward = false;
             break;
         case GLFW_KEY_S:
-            if(action == GLFW_PRESS || action == GLFW_REPEAT) backword = true;
-            else backword = false;
+            if(action == GLFW_PRESS) backword = true;
+            else if(action == GLFW_RELEASE) backword = false;
             break;
         case GLFW_KEY_A:
-            if(action == GLFW_PRESS || action == GLFW_REPEAT) leftword = true;
-            else leftword = false;
+            if(action == GLFW_PRESS) leftword = true;
+            else if(action == GLFW_RELEASE) leftword = false;
             break;
         case GLFW_KEY_D:
-            if(action == GLFW_PRESS || action == GLFW_REPEAT) rightword = true;
-            else rightword = false;
+            if(action == GLFW_PRESS) rightword = true;
+            else if(action == GLFW_RELEASE) rightword = false;
             break;
         default:
             break;

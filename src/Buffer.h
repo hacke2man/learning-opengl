@@ -15,23 +15,20 @@ extern "C" {
     unsigned int id;
     float * data;
     unsigned int size;
+    unsigned int stride;
   };
 
   struct VertexArray {
     unsigned int id;
+    unsigned long offset;
     unsigned int pointerCount;
-    struct AttribPointer * attribPointer;
+    struct VertexBuffer * data;
   };
 
-  struct AttribPointer {
-    unsigned int count;
-    struct AttribPointer * nextPointer;
-  };
-
-  struct VertexArray * CreateVertexArray(unsigned int count);
+  struct VertexArray * CreateVertexArray(struct VertexBuffer * data);
   void AddAttribPointer(struct VertexArray * vertexArray, unsigned int count);
 
-  struct VertexBuffer * CreateVertexBuffer(unsigned int size, float * data);
+  struct VertexBuffer * CreateVertexBuffer(float data[], unsigned int size, unsigned int stride);
 
   struct IndexBuffer * CreateIndexBuffer(unsigned int count, unsigned int * indices);
 

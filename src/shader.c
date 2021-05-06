@@ -1,9 +1,10 @@
 #include "shader.h"
 #include <GL/glew.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <alloca.h>
 
-unsigned int CreateShader(const char * vertexShader, const char * fragmentShader)
+struct Material * CreateMaterial(const char * vertexShader, const char * fragmentShader)
 {
     unsigned int program = glCreateProgram();
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
@@ -18,7 +19,19 @@ unsigned int CreateShader(const char * vertexShader, const char * fragmentShader
     glDeleteShader(vs);
     glDeleteShader(fs);
 
-    return program;
+    struct Material * newMaterial = malloc(sizeof(struct Material));
+    newMaterial->id = program;
+
+    return newMaterial;
+}
+
+void Bind3fv(struct Material * material, char * uniformName, float uniformData[]){
+    glUniform3fv(glGetUniformLocation(material->id, uniformName), 1, &uniformData[0]);
+}
+
+void BindMaterial(struct Material * material)
+{
+    glUseProgram(material->id);
 }
 
 unsigned int CompileShader(unsigned int type, const char * source)

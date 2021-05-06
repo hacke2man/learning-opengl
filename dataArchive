@@ -1,0 +1,49 @@
+    /* glfwGetMonitorWorkarea(primary, &xpos, &ypos, &width, &height); */
+    /* const GLFWvidmode * mode = glfwGetVideoMode(primary); */
+    /* glfwWindowHint(GLFW_RED_BITS, mode->redBits); */
+    /* glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits); */
+    /* glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits); */
+    /* glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate); */
+    /* glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_TRUE); */
+
+    /* glEnable(GL_CULL_FACE); */
+    /* glCullFace(GL_BACK); */
+    /* glFrontFace(GL_CCW); */
+
+    /* glEnable(GL_BLEND); */
+    /* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
+
+    /* float vertices[] = { */
+    /*     -0.5f, -0.5f,  0.5f, 0.0f, 0.0f,//front: bottom left */
+    /*      0.5f, -0.5f,  0.5f, 1.0f, 0.0f,//bottom right */
+    /*      0.5f,  0.5f,  0.5f, 1.0f, 1.0f,//top right */
+    /*     -0.5f,  0.5f,  0.5f, 0.0f, 1.0f,//top left */
+    /*     -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,//back: bottom left */
+    /*      0.5f, -0.5f, -0.5f, 1.0f, 0.0f,//bottom right */
+    /*      0.5f,  0.5f, -0.5f, 1.0f, 1.0f,//top right */
+    /*     -0.5f,  0.5f, -0.5f, 0.0f, 1.0f,//top left */
+    /* }; */
+
+    /* unsigned int indices[] = { */
+    /*     0, 3, 2,//front */
+    /*     2, 1, 0, */
+
+    /*     4, 7, 6,//back */
+    /*     6, 5, 4, */
+
+    /*     2, 6, 7,//top */
+    /*     7, 3, 2, */
+
+    /*     4, 0, 1,//bottom */
+    /*     1, 5, 4, */
+
+    /*     1, 2, 6, */
+    /*     6, 5, 1, */
+
+    /*     4, 7, 3, */
+    /*     3, 0, 4 */
+    /* }; */
+    /* struct IndexBuffer * ibo = CreateIndexBuffer(36, indices); */
+    /* glDrawElements(GL_TRIANGLES, ibo->count, GL_UNSIGNED_INT, NULL); */
+
+//glm_ortho(-2.0f, 2.0f, -1.5f, 1.5f, 0.1f, 100.0f, projection);

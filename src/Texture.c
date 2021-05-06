@@ -2,12 +2,13 @@
 #include <GL/glew.h>
 #include "deps/stb_image.h"
 #include <stdio.h>
+#include "fileToString.h"
 
 struct Texture * CreateTexture(char * path)
 {
     struct Texture * texture = malloc(sizeof(struct Texture));
     stbi_set_flip_vertically_on_load(1);
-    texture->localBuffer = stbi_load(path, &texture->width, &texture->height, &texture->BPP, 4);
+    texture->localBuffer = stbi_load(AppendExecLocation(path), &texture->width, &texture->height, &texture->BPP, 4);
 
     glGenTextures(1, &texture->id);
     glBindTexture(GL_TEXTURE_2D, texture->id);
@@ -30,6 +31,6 @@ struct Texture * CreateTexture(char * path)
 
 void BindTexture(struct Texture * texture, unsigned int slot)
 {
-    glActiveTexture(GL_TEXTURE0 + slot);
+    glActiveTexture(slot);
     glBindTexture(GL_TEXTURE_2D, texture->id);
 }

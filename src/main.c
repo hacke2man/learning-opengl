@@ -1,31 +1,5 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <alloca.h>
-#include <limits.h>
-#include <math.h>
-
-#include "deps/cglm/include/cglm/affine.h"
-#include "deps/cglm/include/cglm/cglm.h"
-#include "deps/cglm/include/cglm/cam.h"
-#include "deps/cglm/include/cglm/mat4.h"
-#include "deps/cglm/include/cglm/project.h"
-#include "deps/cglm/include/cglm/util.h"
+#include "main.h"
 #include "deps/cglm/include/cglm/vec3.h"
-
-#include "fileToString.h"
-#include "Buffer.h"
-#include "shader.h"
-#include "Render.h"
-#include "Texture.h"
-
-void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
-void key_callback(GLFWwindow * window, int key, int scancode, int action, int mods);
-void window_size_callback(GLFWwindow * window, int width, int height);
-void calcView(mat4 * view, vec3 * direction);
-void move();
-static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 float charpos[3] = {0, 0, 3.0};
 int forward = 0;
 int backword = 0;
@@ -34,43 +8,19 @@ int rightword = 0;
 float mousex = -M_PI/2;
 float mousey;
 
-
 int main(void)
 {
-    GLFWwindow* window;
 
     /* Initialize the library */
     if (!glfwInit())
         return -1;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-
-    int width, height, xpos, ypos;
     GLFWmonitor * primary = glfwGetPrimaryMonitor();
-    glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    GLFWwindow * window = SetupGLFW();
 
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
-
-    /* Make the window's context current */
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwMakeContextCurrent(window);
-    glfwSetKeyCallback(window, &key_callback);
-    glfwSetWindowSizeCallback(window, &window_size_callback);
-    glfwSetCursorPosCallback(window, &cursor_position_callback);
-    glewInit();
-    glDebugMessageCallback(&DebugCallback, NULL);
-    glEnable(GL_DEPTH_TEST);
-
+    int width, height, xpos, ypos;
     glfwGetWindowSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
@@ -139,67 +89,87 @@ int main(void)
     AddAttribPointer(vao, 3);
     AddAttribPointer(vao, 2);
 
-    struct VertexArray * sourceVao = CreateVertexArray(vb);
-    AddAttribPointer(sourceVao, 3);
+    struct VertexArray * lightVao = CreateVertexArray(vb);
+    AddAttribPointer(lightVao, 3);
 
     char * vertexShader = FileToString("res/vert.vs");
     char * fragmentShader = FileToString("res/object.fs");
     char * lightshader = FileToString("res/light.fs");
-    struct Material * box = CreateMaterial(vertexShader, fragmentShader);
-    struct Material * light = CreateMaterial(vertexShader, lightshader);
+    struct Material * boxMaterial = CreateMaterial(vertexShader, fragmentShader);
+    struct Material * lightMaterial = CreateMaterial(vertexShader, lightshader);
 
     struct Texture * container_spec = CreateTexture("img/container2_specular.png");
     struct Texture * container = CreateTexture("img/container2.png");
-    BindTexture(container_spec, GL_TEXTURE1);
+    glUseProgram(boxMaterial->id);
     BindTexture(container, GL_TEXTURE0);
+    BindTexture(container_spec, GL_TEXTURE1);
+    glUniform1i(glGetUniformLocation(boxMaterial->id, "u_texture"), 0);
+    glUniform1i(glGetUniformLocation(boxMaterial->id, "u_texture2"), 1);
 
     vec3 direction;
     mat4 projection;
     glm_perspective(glm_rad(90.0f), (float)width/(float)height, 0.1f, 100.0f, projection);
 
+    vec3 up = {0.0, 1.0, 0.0};
     /* vec3 objectColor = {1.0f, 0.5f, 0.31f}; */
     vec3 objectColor = {0.3f,0.8f,0.8f};
     vec3 lightColor = {1.0f,1.0f,1.0f};
     /* vec3 lightColor = {245.0f/255.0f,212.0f/255.0f,0.0f}; */
     /* vec3 lightColor = {0.3f,0.8f,0.8f}; */
     vec3 lightPos = { 1.2f, 1.0f, 2.0f};
+    /* glm_vec3_scale(lightPos, 2.0f, lightPos); */
+    /* vec3 lightPos = { -1.2f, -1.0f, -2.0f}; */
+    /* vec3 lightPos = {0.0, 1.0, 0.0}; */
+    vec3 axis = {1.0f, 0.3f, 0.5f};
+    mat4 model;
+    mat4 view;
 
+    struct Object * box = CreateObject(vao, boxMaterial, &model[0][0], &view[0][0], &projection[0][0]);
+    struct Object * light = CreateObject(lightVao, lightMaterial, &model[0][0], &view[0][0], &projection[0][0]);
 
-
-
+    float offset = 0.0f;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
+        offset +=0.01f;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        mat4 model; glm_mat4_identity(model);
-        mat4 view; glm_mat4_identity(view);
+        glm_mat4_identity(model);
+        glm_mat4_identity(view);
 
         calcView(&view, &direction);
         move(direction);
 
-        glBindVertexArray(vao->id);
-        BindMaterial(box);
-        glUniform3fv(glGetUniformLocation(box->id, "lightPos"), 1, lightPos);
-        glUniform3fv(glGetUniformLocation(box->id, "lightColor"), 1, lightColor);
-        glUniform3fv(glGetUniformLocation(box->id, "objectColor"), 1, objectColor);
-        glUniform3fv(glGetUniformLocation(box->id, "viewPos"), 1, charpos);
-        glUniformMatrix4fv(glGetUniformLocation(box->id, "model"), 1, GL_FALSE, &model[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(box->id, "view"), 1, GL_FALSE, &view[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(box->id, "projection"), 1, GL_FALSE, &projection[0][0]);
+        BindObject(box);
+        glUniform3fv(glGetUniformLocation(boxMaterial->id, "lightPos"), 1, lightPos);
+        glUniform3fv(glGetUniformLocation(boxMaterial->id, "lightColor"), 1, lightColor);
+        glUniform3fv(glGetUniformLocation(boxMaterial->id, "objectColor"), 1, objectColor);
+        glUniform1f(glGetUniformLocation(boxMaterial->id, "constant"), 1.0f);
+        glUniform1f(glGetUniformLocation(boxMaterial->id, "linear"), 0.09f);
+        glUniform1f(glGetUniformLocation(boxMaterial->id, "quadratic"), 0.032f);
+        /* for(unsigned int i = 0; i < 10; i++) */
+        /* { */
+        /*     glm_mat4_identity(model); */
+
+        /*     glm_translate(model, cubePositions[i]); */
+        /*     float angle = 20.0f * i; */
+        /*     glm_rotate(model, angle + offset, axis); */
+        /*     glUniformMatrix4fv(glGetUniformLocation(boxMaterial->id, "model"), 1, GL_FALSE, &model[0][0]); */
+
+        /*     glDrawArrays(GL_TRIANGLES, 0, 36); */
+        /* } */
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        glUniform3fv(glGetUniformLocation(boxMaterial->id, "viewPos"), 1, charpos);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        glm_vec3_rotate(lightPos, 0.01f, up);
         glm_translate_make(model, lightPos);
         vec3 resizer = {0.3f, 0.3f, 0.3f};
         glm_scale(model, resizer);
 
-        glBindVertexArray(sourceVao->id);
-        BindMaterial(light);
-        glUniform3fv(glGetUniformLocation(light->id, "lightColor"), 1, &lightColor[0]);
-        glUniformMatrix4fv(glGetUniformLocation(light->id, "model"), 1, GL_FALSE, &model[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(light->id, "view"), 1, GL_FALSE, &view[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(light->id, "projection"), 1, GL_FALSE, &projection[0][0]);
+        BindObject(light);
+        glUniform3fv(glGetUniformLocation(lightMaterial->id, "lightColor"), 1, &lightColor[0]);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         /* Swap front and back buffers */
@@ -209,10 +179,40 @@ int main(void)
         glfwPollEvents();
     }
 
-    glDeleteProgram(box->id);
-    glDeleteProgram(light->id);
+    glDeleteProgram(boxMaterial->id);
+    glDeleteProgram(lightMaterial->id);
     glfwTerminate();
     return 0;
+}
+
+GLFWwindow * SetupGLFW()
+{
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+    GLFWwindow* window;
+    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+
+    if (!window)
+    {
+        glfwTerminate();
+        return NULL;
+    }
+
+    /* Make the window's context current */
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, &key_callback);
+    glfwSetWindowSizeCallback(window, &window_size_callback);
+    glfwSetCursorPosCallback(window, &cursor_position_callback);
+
+    glewInit();
+    glDebugMessageCallback(&DebugCallback, NULL);
+    glEnable(GL_DEPTH_TEST);
+
+    return window;
 }
 
 void calcView(mat4 * view, vec3 * direction)

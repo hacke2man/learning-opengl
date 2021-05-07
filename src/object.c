@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include "shader.h"
 #include <stdlib.h>
+#include "deps/cglm/include/cglm/cglm.h"
 
 struct Object * CreateObject(struct VertexArray * vao, struct Material * material, float * model, float * view, float * projection)
 {
